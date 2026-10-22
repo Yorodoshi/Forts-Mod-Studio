@@ -27,7 +27,7 @@ VirusTotal report: [insert the report URL for the same hash]
 
 Your engine's detection name: [insert the exact detection label]
 
-The application edits local JSON projects and image/audio assets, generates game mod files and reads local game templates. It loads the installed game's DevIL image decoder and invokes the game's LuaPlusC syntax checker. The historical 2.7.1 release restricts those code paths to a Steam-discovered or explicitly approved local game installation; this change and its published GitHub build provenance do not apply to the restored 2.7.0 release. Public source and the release-specific verification notes are available in the repository. Neither release is Authenticode-signed.
+The application edits local JSON projects and image/audio assets, generates game mod files and reads local game templates. It loads the installed game's DevIL image decoder and invokes the game's LuaPlusC syntax checker. The historical 2.7.1 release restricts those code paths to a Steam-discovered or explicitly approved local game installation; this change and its published GitHub build provenance do not apply to the restored 2.7.0 release. Public source and the release-specific verification notes are available in the repository. Published versions 2.7.0, 2.7.1 and 2.8.0 are not Authenticode-signed.
 
 Please determine whether the detection is warranted and advise which behavior or component requires correction. We are requesting a manual review, not asserting that a low number of detections proves the file safe.
 

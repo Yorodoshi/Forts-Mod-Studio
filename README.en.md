@@ -5,17 +5,17 @@
 A desktop mod editor for **Forts**. Create materials, devices, technology buildings, weapons, projectiles and scenarios, then export or install your mod.
 
 
-The primary release is **2.7.0**. At the owner's request, 2.7.1 is retained as a prerelease following a 4/71 VirusTotal report. [Rollback details and exact files](docs/releases/rollback-to-v2.7.0.md).
+The primary release is **2.8.0**, with formulas and a variable editor. [Formula guide](docs/formulas.en.md). Version 2.7.1 remains superseded; its [rollback history](docs/releases/rollback-to-v2.7.0.md) is preserved.
 
 ## Install and launch
 
 1. Open [Releases](https://github.com/Yorodoshi/Forts-Mod-Studio/releases).
-2. Download and extract the release ZIP, then run **Forts Mod Studio 2.7.exe**. A standalone EXE is also available.
+2. Download and extract the release ZIP, then run **Forts Mod Studio 2.8.exe**. A standalone EXE is also available.
 3. Under **Project and installation**, select the folder containing `Forts.exe` if automatic detection did not find it.
 
 Requires Windows x64, .NET Framework 4.x and an installed copy of Forts for game templates, Lua validation and the in-game range. FMS needs no installer or additional libraries. High Seas features, including consumable ammunition, require the corresponding game content.
 
-Before updating, save your project and close the previous FMS version. Versions 2.5–2.7 share the same autosave.
+Before updating, save a separate project copy and close the previous FMS version. Versions 2.5–2.8 share the same autosave. Old projects open in 2.8; the new formulas and types require 2.8 or later.
 
 ## English and Russian
 
@@ -30,7 +30,7 @@ The interface language is stored separately from the mod project. Switching it d
 - Weapons: ammunition, separate base and rotating artwork, pivot, muzzle position and recoil.
 - Projectiles: flight parameters, visuals, cluster splitting and editable child projectiles.
 - Hybrid anti-air: configurable long- and close-range modes with automatic switching.
-- Scenarios: events, conditions, actions, variables and sounds.
+- Scenarios: events, conditions, actions, variables and sounds. Integer, floating-point and list types; mathematical formulas, derivatives and integrals; a dedicated variable editor and offline guide.
 - Scene editor: building, aiming, trajectory, animation, zoom, undo and redo.
 - ZIP export, installation into a separate mod folder, Lua validation using the installed game and log viewing.
 
@@ -57,7 +57,7 @@ On Windows, run from the repository folder:
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-Output: `dist\Forts Mod Studio 2.7.exe`. The script uses the Windows .NET Framework x64 compiler. C# source and embedded Lua resources are in `src/`.
+Output: `dist\Forts Mod Studio 2.8.exe`. The script uses the Windows .NET Framework x64 compiler. C# source and embedded Lua resources are in `src/`.
 
 ## Authenticity and security
 

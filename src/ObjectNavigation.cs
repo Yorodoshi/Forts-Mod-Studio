@@ -70,7 +70,7 @@ namespace FortsStudio {
    navigation.RowStyles.Add(new RowStyle(SizeType.AutoSize));
    navigation.RowStyles.Add(new RowStyle(SizeType.Percent,100));
    navigation.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-   var brand=Theme.Label("F / STUDIO 2.7",12,true);brand.Dock=DockStyle.Fill;brand.Margin=Padding.Empty;brand.Padding=new Padding(12,16,6,15);navigation.Controls.Add(brand,0,0);
+   var brand=Theme.Label("F / STUDIO 2.8",12,true);brand.Dock=DockStyle.Fill;brand.Margin=Padding.Empty;brand.Padding=new Padding(12,16,6,15);navigation.Controls.Add(brand,0,0);
    var categories=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Margin=Padding.Empty,Padding=new Padding(8,0,8,8)};
    categories.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
    foreach(var pair in names.Concat(new[]{new KeyValuePair<string,string>("actions","Сценарии"),new KeyValuePair<string,string>("project","Проект и установка")})){

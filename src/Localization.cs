@@ -22,7 +22,7 @@ namespace FortsStudio {
   static string language="ru";
   public static bool English {get{return language=="en";}}
   static UiText(){
-   AddCoreTranslations(translations);AddEditorTranslations(translations);AddPreviewTranslations(translations);
+   AddCoreTranslations(translations);AddEditorTranslations(translations);AddPreviewTranslations(translations);AddFormulaTranslations(translations);
    translations["1 клетка = {0} ед.  ·  {1}%  ·  Балок: {2}  ·  Объектов: {3}"]="1 cell = {0} units  ·  {1}%  ·  Beams: {2}  ·  Objects: {3}";
    translations["Ближний режим · скоростная очередь"]="Close mode · rapid burst";
    translations["Дальний режим · зенитный залп"]="Long-range mode · anti-air burst";

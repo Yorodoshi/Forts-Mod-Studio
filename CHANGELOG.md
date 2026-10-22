@@ -1,5 +1,21 @@
 # Changes / Изменения
 
+## 2.8.0 — переменные и формулы / variables and formulas
+
+- Добавлены типы «Целочисленное» (Int32), «Дробное» (double) и «Список» чисел; прежние числовые переменные загружаются как дробные.
+- Начальные значения и числовые значения блоков поддерживают формулы, ссылки на переменные, тригонометрию, логарифмы, операции со списками, численные производные и интегралы.
+- Справа в сценариях появилась отдельная панель всех переменных с типом, областью, формулой и вычисленным начальным значением.
+- Добавлен редактор с сохранением/отменой, обновлением ссылок при переименовании и списком зависимостей при удалении.
+- Действие «Редактировать переменную» присваивает и изменяет числа, заменяет списки, добавляет, изменяет и удаляет элементы, очищает список.
+- Формулы экспортируются как данные дерева выражения; добавлены проверки типов, областей определения, индексов, переполнения и сложности вычисления. Ошибка в матче останавливает текущий запуск цепочки и записывается в журнал.
+- Полный гайд с поиском встроен в приложение и опубликован на русском и английском.
+
+Typed variables, a dedicated right-hand variable pane, atomic editing/renaming, numeric and list mutation actions, and bounded mathematical expressions are now available. The expression language includes numeric differentiation and Simpson integration. Existing numeric projects retain their values. Initial values are shown in the editor; live match values are not read back from Forts.
+
+[Руководство](docs/formulas.md) · [English guide](docs/formulas.en.md) · [Выпуск / Release notes](docs/releases/v2.8.0.md).
+
+Сборка компилируется штатным компилятором .NET Framework. Автоматические тесты и интерактивный прогон FMS/Forts в этом изменении не выполнялись. Выпуск не подписан Authenticode; результат VirusTotal для него не заявляется.
+
 ## Rollback to 2.7.0 / Возврат 2.7.0
 
 - Restored application source and build.ps1 exactly from v2.7.0; original release binaries are unchanged.

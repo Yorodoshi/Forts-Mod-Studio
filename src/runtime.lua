@@ -4,26 +4,57 @@ local function state()
  return data.FMS
 end
 local function subject(c) return c.subject or (c.node and ('p:'..c.node)) or (c.device and ('d:'..c.device)) or 'world' end
+local function copyValue(value)
+ if type(value)~='table' then return value end
+ local copy={};for i,item in ipairs(value) do copy[i]=item end;return copy
+end
+local function finite(value)
+ if type(value)~='number' or value~=value or value==math.huge or value==-math.huge then error('FMS: expected a finite number') end
+ return value
+end
+local function coerce(def,value)
+ if def.type=='list' then
+  if type(value)~='table' then error('FMS: expected a numeric list') end
+  if #value>4096 then error('FMS: list exceeds 4096 items') end
+  local copy={};for i,item in ipairs(value) do copy[i]=finite(item) end;return copy
+ end
+ value=finite(value)
+ if def.type=='int' then
+  value=value<0 and math.ceil(value) or math.floor(value)
+  if value < -2147483648 or value > 2147483647 then error('FMS: integer overflow') end
+ end
+ return value
+end
 local function vars(c,name)
- local s=state(); local def=fms_variables[name] or {scope='object',initial=0}
+ local s=state(); local def=fms_variables[name]
+ if not def then error('FMS: undeclared variable '..tostring(name)) end
  local t=s.globals
  if def.scope~='global' then local k=subject(c); s.objects[k]=s.objects[k] or {}; t=s.objects[k] end
- if t[name]==nil then t[name]=def.initial end
+ if t[name]==nil then t[name]=copyValue(def.initial) end
  return t
 end
-local function numeric(text,fallback,c)
- if not text or text=='' then return fallback or 0 end
- if string.sub(text,1,1)=='$' then
-  local n=string.sub(text,2)
-  if n=='speed' and c.node and NodeExists(c.node) then local v=NodeVelocity(c.node); return math.sqrt(v.x*v.x+v.y*v.y) end
-  if n=='repeat_index' then return c.repeat_index or 0 end
-  if n=='hp' and c.node and NodeExists(c.node) then return GetNodeProjectileHitPoints(c.node) end
-  if n=='damage' and c.node and NodeExists(c.node) then return GetNodeProjectileDamage(c.node) end
-  return vars(c,n)[n]
- end
- return tonumber(text) or fallback or 0
+local function resolve(c,name)
+ if name=='speed' then if c.node and NodeExists(c.node) then local v=NodeVelocity(c.node);return math.sqrt(v.x*v.x+v.y*v.y) end;return 0 end
+ if name=='repeat_index' then return c.repeat_index or 0 end
+ if name=='hp' then return c.node and NodeExists(c.node) and GetNodeProjectileHitPoints(c.node) or 0 end
+ if name=='damage' then return c.node and NodeExists(c.node) and GetNodeProjectileDamage(c.node) or 0 end
+ return vars(c,name)[name]
+end
+local function valueFor(b,c)
+ if b.formula then return fms_formula_eval(b.formula,function(name) return resolve(c,name) end) end
+ return b.number or 0
+end
+local function numeric(b,c)
+ return finite(valueFor(b,c))
 end
 local function compare(a,op,b)
+ if type(a)=='table' or type(b)=='table' then
+  if op~='==' and op~='~=' then error('FMS: lists only support == and ~= comparisons') end
+  local equal=type(a)=='table' and type(b)=='table' and #a==#b
+  if equal then for i,item in ipairs(a) do if item~=b[i] then equal=false;break end end end
+  if op=='==' then return equal else return not equal end
+ end
+ finite(a);finite(b)
  if op=='==' then return a==b elseif op=='~=' then return a~=b elseif op=='<' then return a<b elseif op=='>' then return a>b elseif op=='<=' then return a<=b else return a>=b end
 end
 local function position(c)
@@ -41,10 +72,10 @@ local function condition(b,c)
  if b.type=='ally' then return c.owner and c.target and c.owner%MAX_SIDES==c.target%MAX_SIDES end
  if b.type=='material' then return c.material==b.value end
  if b.type=='source' then return c.source==b.value end
- if b.type=='variable' then return compare(vars(c,b.value)[b.value],b.op,numeric(b.text,b.number,c)) end
+ if b.type=='variable' then return compare(vars(c,b.value)[b.value],b.op,valueFor(b,c)) end
  if b.type=='alive' then return alive(c) end
- if b.type=='chance' then return GetRandomFloat(0,100,'FMS condition')<numeric(b.text,b.number,c) end
- if b.type=='hp' then return c.node and NodeExists(c.node) and compare(GetNodeProjectileHitPoints(c.node),b.op,numeric(b.text,b.number,c)) end
+ if b.type=='chance' then return GetRandomFloat(0,100,'FMS condition')<numeric(b,c) end
+ if b.type=='hp' then return c.node and NodeExists(c.node) and compare(GetNodeProjectileHitPoints(c.node),b.op,numeric(b,c)) end
  return false
 end
 local function stopAudio(key)
@@ -74,15 +105,36 @@ local function stopObject(c)
  local keys={}; for k in pairs(state().audio) do if string.sub(k,1,#prefix)==prefix then table.insert(keys,k) end end
  for _,k in ipairs(keys) do stopAudio(k) end
 end
+local function editVariable(b,c)
+ local def=fms_variables[b.value];if not def then error('FMS: undeclared variable '..tostring(b.value)) end
+ local target=vars(c,b.value);local old=target[b.value]
+ local op=b.type=='set_var' and 'set' or b.type=='add_var' and 'add' or b.type=='multiply_var' and 'multiply' or b.operation or 'set'
+ local result
+ if op=='set' then result=valueFor(b,c)
+ elseif op=='add' then result=finite(old)+numeric(b,c)
+ elseif op=='multiply' then result=finite(old)*numeric(b,c)
+ elseif def.type=='list' then
+  if type(old)~='table' then error('FMS: expected a list variable') end
+  result=copyValue(old)
+  if op=='clear' then result={}
+  elseif op=='append' then
+   if #result>=4096 then error('FMS: list exceeds 4096 items') end
+   table.insert(result,numeric(b,c))
+  elseif op=='set_item' or op=='remove_item' then
+   local index=finite(fms_formula_eval(b.indexFormula,function(name) return resolve(c,name) end))
+   if index~=math.floor(index) or index<1 or index>#result then error('FMS: list index is outside 1..length') end
+   if op=='set_item' then result[index]=numeric(b,c) else table.remove(result,index) end
+  else error('FMS: unknown list edit operation') end
+ else error('FMS: operation does not match variable type') end
+ target[b.value]=coerce(def,result)
+end
 local function action(b,c)
- local n=numeric(b.text,b.number,c)
+ if b.type=='set_var' or b.type=='add_var' or b.type=='multiply_var' or b.type=='edit_var' then editVariable(b,c);return end
+ local n=(b.formula or b.numeric) and numeric(b,c) or b.number
  if b.type=='effect' then if b.value~='' then SpawnEffect(b.value,position(c)) end
  elseif b.type=='sound' then if b.sound then SpawnEffect(b.sound,position(c)) end
  elseif b.type=='loop_sound' then if b.sound then audio(c,b.sound,b.duration,b.tag) end
  elseif b.type=='stop_sound' then stopAudio(subject(c)..':'..b.tag)
- elseif b.type=='set_var' then vars(c,b.value)[b.value]=n
- elseif b.type=='add_var' then local t=vars(c,b.value);t[b.value]=t[b.value]+n
- elseif b.type=='multiply_var' then local t=vars(c,b.value);t[b.value]=t[b.value]*n
  elseif b.type=='fire' then if c.a and c.b then IgniteLink(c.a,c.b,true) else IgniteFire(position(c),n,n,TEAM_ANY) end
  elseif b.type=='damage' then if c.device and DeviceExists(c.device) then ApplyDamageToDevice(c.device,n) end
  elseif b.type=='device' then if c.a and c.b then CreateDevice(c.owner,b.value,c.a,c.b,c.t or .5) end
@@ -113,14 +165,14 @@ local function push(task,ids)
  for _,id in ipairs(ids) do local b=fms_blocks[id];if b and b.kind=='condition' and not condition(b,task.context) then return false end end
  table.insert(task.stack,{ids=ids,index=1});return true
 end
-function FMS_RunTask(id)
+local function runTask(id)
  local s=state();local task=s.tasks[id];if not task then return end
  for budget=1,256 do
   local frame=task.stack[#task.stack]
   if not frame then s.tasks[id]=nil;return end
   if frame.loop then
-   local b=fms_blocks[frame.loop];local more=frame.remaining>0
-   if b.type=='while' then more=condition({type='variable',value=b.value,op=b.op,number=b.number,text=b.text},task.context) and frame.remaining>0 end
+   task.block=frame.loop;local b=fms_blocks[frame.loop];local more=frame.remaining>0
+   if b.type=='while' then more=condition({type='variable',value=b.value,op=b.op,number=b.number,formula=b.formula},task.context) and frame.remaining>0 end
    if not more then table.remove(task.stack) else
     if frame.started then frame.started=false;ScheduleCall(b.interval,FMS_RunTask,id);return end
     frame.remaining=frame.remaining-1;frame.iteration=frame.iteration+1;task.context.repeat_index=frame.iteration;frame.started=true;push(task,b.children)
@@ -128,11 +180,11 @@ function FMS_RunTask(id)
   else
    local bid=frame.ids[frame.index]
    if not bid then table.remove(task.stack) else
-    frame.index=frame.index+1;local b=fms_blocks[bid]
+    frame.index=frame.index+1;task.block=bid;local b=fms_blocks[bid]
     if b then
      if b.kind=='if' then push(task,condition(b,task.context) and b.children or b.otherwise)
-     elseif b.kind=='loop' then table.insert(task.stack,{loop=bid,remaining=b.type=='while' and 10000 or math.min(10000,math.max(0,math.floor(numeric(b.text,b.number,task.context)))),iteration=0})
-     elseif b.kind=='delay' then push(task,b.children);ScheduleCall(math.max(0,numeric(b.text,b.number,task.context)),FMS_RunTask,id);return
+     elseif b.kind=='loop' then table.insert(task.stack,{loop=bid,remaining=b.type=='while' and 10000 or math.min(10000,math.max(0,math.floor(numeric(b,task.context)))),iteration=0})
+     elseif b.kind=='delay' then push(task,b.children);ScheduleCall(math.max(0,math.min(3600,numeric(b,task.context))),FMS_RunTask,id);return
      elseif b.kind=='group' then push(task,b.children)
      elseif b.kind=='action' then if b.type=='stop' then s.tasks[id]=nil;return else action(b,task.context) end end
     end
@@ -141,11 +193,21 @@ function FMS_RunTask(id)
  end
  ScheduleCall(.05,FMS_RunTask,id)
 end
+function FMS_RunTask(id)
+ local s=state();local task=s.tasks[id];if not task then return end
+ local ok,message=pcall(runTask,id)
+ if not ok then
+  s.tasks[id]=nil;s.formulaErrors=s.formulaErrors or {};local key=task.block or 'condition'
+  if not s.formulaErrors[key] then s.formulaErrors[key]=true;Log('FMS_FORMULA_ERROR '..key..': '..tostring(message)) end
+ end
+end
 local function launch(rule,c)
  local s=state();local count=0;for _ in pairs(s.tasks) do count=count+1 end;if count>=1024 then return end
  local copy={};for k,v in pairs(c) do copy[k]=v end
  s.serial=s.serial+1;local id=s.serial;s.tasks[id]={context=copy,stack={}}
- push(s.tasks[id],rule.body);FMS_RunTask(id)
+ local ok,message=pcall(push,s.tasks[id],rule.body)
+ if not ok then s.tasks[id]=nil;s.formulaErrors=s.formulaErrors or {};if not s.formulaErrors[rule.body[1] or 'condition'] then s.formulaErrors[rule.body[1] or 'condition']=true;Log('FMS_FORMULA_ERROR: '..tostring(message)) end;return end
+ FMS_RunTask(id)
 end
 local function emit(event,c)
  if c.pos then c.x=c.pos.x;c.y=c.pos.y;c.pos=nil end
