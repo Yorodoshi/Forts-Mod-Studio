@@ -1,0 +1,24 @@
+# Local builds
+/dist/
+/bin/
+/obj/
+*.exe
+*.dll
+*.pdb
+*.zip
+
+# Personal projects, imported assets, autosaves and logs
+*.fms.json
+autosave*.json
+startup-error.txt
+build-report.txt
+*.log
+.fms-history/
+
+# Editor and OS state
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+Desktop.ini
