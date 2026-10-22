@@ -8,7 +8,7 @@
 - Bounded the Lua-checker process and drained both output streams concurrently.
 - Added an explicit asInvoker manifest, release checksums, build metadata and a pinned GitHub Actions provenance workflow.
 - Added bilingual security notes and a suspected-false-positive report template.
-- Documented that the binary is unsigned and no clean VirusTotal result is claimed.
+- Documented that the binary is unsigned and no clean VirusTotal result is claimed. Published the successful build record and exact release hashes.
 
 Исправлены границы доверия к папке игры, загрузка декодера, выходные пути и запуск анализатора Lua. Добавлены контрольные суммы, происхождение сборки и сведения о подписи. [Полные заметки](docs/releases/v2.7.1.md).
 
