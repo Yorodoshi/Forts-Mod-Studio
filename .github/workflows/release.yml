@@ -1,0 +1,81 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Build portable package
+        shell: powershell
+        run: .\package.ps1
+
+      - name: Locate release files
+        id: files
+        shell: powershell
+        env:
+          FMS_TAG: ${{ github.ref_name }}
+          FMS_IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          $info = Get-Content -LiteralPath 'dist/build-info.json' -Raw | ConvertFrom-Json
+          $version = $info.version
+          if ($env:FMS_IS_TAG -eq 'true' -and $env:FMS_TAG -cne "v$version") {
+            throw 'The release tag does not match AssemblyFileVersion.'
+          }
+          "version=$version" | Out-File -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "exe=dist/$($info.binary.name)" | Out-File -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "zip=dist/Forts-Mod-Studio-$version-win-x64.zip" | Out-File -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "notes=docs/releases/v$version.md" | Out-File -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Attest executable and portable archive
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: |
+            ${{ steps.files.outputs.exe }}
+            ${{ steps.files.outputs.zip }}
+
+      - name: Preserve build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Forts-Mod-Studio-${{ steps.files.outputs.version }}-win-x64
+          if-no-files-found: error
+          path: |
+            ${{ steps.files.outputs.exe }}
+            ${{ steps.files.outputs.zip }}
+            dist/SHA256SUMS.txt
+            dist/build-info.json
+
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FMS_TAG: ${{ github.ref_name }}
+          FMS_VERSION: ${{ steps.files.outputs.version }}
+          FMS_EXE: ${{ steps.files.outputs.exe }}
+          FMS_ZIP: ${{ steps.files.outputs.zip }}
+          FMS_NOTES: ${{ steps.files.outputs.notes }}
+        run: |
+          if (-not (Test-Path -LiteralPath $env:FMS_NOTES -PathType Leaf)) {
+            throw 'Release notes are missing from docs/releases.'
+          }
+          gh release create $env:FMS_TAG --verify-tag --title "Forts Mod Studio $env:FMS_VERSION" --notes-file $env:FMS_NOTES $env:FMS_EXE $env:FMS_ZIP 'dist/SHA256SUMS.txt' 'dist/build-info.json'
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed.' }

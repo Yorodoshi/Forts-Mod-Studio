@@ -1,5 +1,17 @@
 # Changes / Изменения
 
+## 2.7.1
+
+- Separated executable/DLL location approval from imported project data.
+- Restricted DevIL module/dependency loading and checked native image buffers.
+- Confined generated resource paths and audio-preview filenames.
+- Bounded the Lua-checker process and drained both output streams concurrently.
+- Added an explicit asInvoker manifest, release checksums, build metadata and a pinned GitHub Actions provenance workflow.
+- Added bilingual security notes and a suspected-false-positive report template.
+- Documented that the binary is unsigned and no clean VirusTotal result is claimed.
+
+Исправлены границы доверия к папке игры, загрузка декодера, выходные пути и запуск анализатора Lua. Добавлены контрольные суммы, происхождение сборки и сведения о подписи. [Полные заметки](docs/releases/v2.7.1.md).
+
 ## 2.7.0
 
 - Added live Russian/English interface switching in the top toolbar.
