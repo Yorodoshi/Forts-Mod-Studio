@@ -6,44 +6,39 @@ namespace FortsStudio {
   // hashing all of that data on every paint and releases unused project data.
   static ConditionalWeakTable<string,ImageEntry> embeddedImages=new ConditionalWeakTable<string,ImageEntry>();
   static Dictionary<string,Dictionary<string,Bitmap>> fileImages=new Dictionary<string,Dictionary<string,Bitmap>>(StringComparer.Ordinal);
-  // Project files describe assets; they do not establish trust in a game installation.
-  // Embedded images can be previewed without loading any local game code.
-  static string GameAssetPath(string game,string relative){
-   if(String.IsNullOrEmpty(relative)||Path.IsPathRooted(relative))throw new IOException("Invalid game asset path.");
-   string data=Path.GetFullPath(Path.Combine(game,"data"))+Path.DirectorySeparatorChar;
-   string file=Path.GetFullPath(Path.Combine(data,relative));
-   if(!file.StartsWith(data,StringComparison.OrdinalIgnoreCase))throw new IOException("Game asset path leaves the data directory.");
-   return file;
-  }
-  static string LocalAssetPath(string source){
-   // Reject UNC, device paths, drive-relative paths and current-drive rooted paths.
-   if(String.IsNullOrEmpty(source)||source.Length<3||!Char.IsLetter(source[0])||source[1]!=':'||(source[2]!='\\'&&source[2]!='/'))throw new IOException("An absolute local asset path is required.");
-   string full=Path.GetFullPath(source);
-   if(new DriveInfo(Path.GetPathRoot(full)).DriveType==DriveType.Network)throw new IOException("Network assets are not supported.");
-   return full;
-  }
-  public static void Resolve(string game){try{game=GameInstallation.RequireRoot(game);}catch{return;}foreach(var t in Catalog.Templates){try{string list=File.ReadAllText(GameAssetPath(game,Catalog.TemplateListPath(t)));string entry=Catalog.LuaTable(list,t.Key);var m=Regex.Match(entry,"FileName\\s*=\\s*\"([^\"]+)\"");if(m.Success)t.Script=m.Groups[1].Value;
+  static bool native=false,attempt=false;
+  [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]static extern IntPtr LoadLibrary(string path);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern void ilInit();
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern void ilGenImages(uint n,out uint images);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern void ilBindImage(uint image);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall,CharSet=CharSet.Ansi)]static extern byte ilLoadImage(string name);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern byte ilConvertImage(uint format,uint type);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern int ilGetInteger(uint mode);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern IntPtr ilGetData();
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern void ilDeleteImages(uint n,ref uint images);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern byte ilEnable(uint mode);
+  [DllImport("DevIL.dll",CallingConvention=CallingConvention.StdCall)]static extern void ilOriginFunc(uint mode);
+  public static void Resolve(string game){foreach(var t in Catalog.Templates){try{string list=File.ReadAllText(Path.Combine(game,"data",Catalog.TemplateListPath(t)));string entry=Catalog.LuaTable(list,t.Key);var m=Regex.Match(entry,"FileName\\s*=\\s*\"([^\"]+)\"");if(m.Success)t.Script=m.Groups[1].Value;
     if(t.Kind=="materials"){m=Regex.Match(entry,"Sprite\\s*=\\s*\"([^\"]+)\"");if(m.Success)t.Sprite=m.Groups[1].Value;}
-    string src=t.Script.Length>0?File.ReadAllText(GameAssetPath(game,t.Script)):list;
+    string src=t.Script.Length>0?File.ReadAllText(Path.Combine(game,"data",t.Script)):list;
     int rootAt=src.IndexOf("Root =");if(rootAt>=0){string tree=src.Substring(rootAt);if(t.Kind=="devices"&&TechnologyRules.IsTemplate(t.Key)){var rootSprite=Regex.Match(tree,"Sprite\\s*=\\s*\"([^\"]+)\"");if(rootSprite.Success)t.Sprite=rootSprite.Groups[1].Value;}else{var head=Regex.Match(tree,"Name\\s*=\\s*\"Head\"");if(head.Success){int open=tree.LastIndexOf('{',head.Index);var node=Catalog.Balanced(tree,open);var sprite=Regex.Match(node,"Sprite\\s*=\\s*\"([^\"]+)\"");if(sprite.Success)t.Sprite=sprite.Groups[1].Value;}}}
     var sprites=Regex.Matches(src,"Name\\s*=\\s*\"([^\"]+)\"");string chosen="";foreach(Match s in sprites){string name=s.Groups[1].Value;if(name==t.Sprite||chosen==""&&t.Kind!="materials"){int a=src.LastIndexOf('{',s.Index);var body=a>=0?Catalog.Balanced(src,a):"";var tex=Regex.Match(body,"texture\\s*=\\s*\"([^\"]+)\"");if(tex.Success){if(chosen==""||name==t.Sprite){t.Texture=tex.Groups[1].Value;chosen=name;}if(name==t.Sprite)break;}}}if(chosen.Length>0&&t.Kind!="materials")t.Sprite=chosen;
    }catch{}}
   }
-  public static byte[] DataBytes(string s){if(s.StartsWith("data:")){int i=s.IndexOf(',');return Convert.FromBase64String(s.Substring(i+1));}return File.ReadAllBytes(LocalAssetPath(s));}
+  public static byte[] DataBytes(string s){if(s.StartsWith("data:")){int i=s.IndexOf(',');return Convert.FromBase64String(s.Substring(i+1));}return File.ReadAllBytes(s);}
   public static string Import(string path,bool image){if(!image)return "data:audio/"+Path.GetExtension(path).TrimStart('.')+";base64,"+Convert.ToBase64String(File.ReadAllBytes(path));using(var b=new Bitmap(path)){double sc=Math.Min(1,2048.0/Math.Max(b.Width,b.Height));using(var target=Raster.Resize(b,Math.Max(1,(int)(b.Width*sc)),Math.Max(1,(int)(b.Height*sc)))){using(var ms=new MemoryStream()){target.Save(ms,ImageFormat.Png);return "data:image/png;base64,"+Convert.ToBase64String(ms.ToArray());}}}}
   public static Bitmap Image(string source,string game){
    if(String.IsNullOrEmpty(source))return null;
    bool embedded=source.StartsWith("data:",StringComparison.Ordinal);game=game??"";
-   if(!embedded){try{game=GameInstallation.RequireRoot(game);}catch{return null;}}
    ImageEntry entry;Dictionary<string,Bitmap> files=null;Bitmap old;
    if(embedded){if(embeddedImages.TryGetValue(source,out entry))return entry.Image;}
    else{if(!fileImages.TryGetValue(game,out files)){files=new Dictionary<string,Bitmap>(StringComparer.Ordinal);fileImages.Add(game,files);}if(files.TryGetValue(source,out old))return old;}
    Bitmap b=null;
-   try{if(embedded){using(var ms=new MemoryStream(DataBytes(source)))using(var im=new Bitmap(ms))b=new Bitmap(im);}else{string path=Path.IsPathRooted(source)?LocalAssetPath(source):GameAssetPath(game,source);if(!File.Exists(path)){var stem=Path.ChangeExtension(path,null);path=new[]{stem+".tga",stem+".png",stem+".dds",stem}.FirstOrDefault(File.Exists)??path;}try{using(var im=new Bitmap(path))b=new Bitmap(im);}catch{b=NativeImage(path,game);}}}catch{}
+   try{if(embedded){using(var ms=new MemoryStream(DataBytes(source)))using(var im=new Bitmap(ms))b=new Bitmap(im);}else{string path=Path.IsPathRooted(source)?source:Path.Combine(game,"data",source);if(!File.Exists(path)){var stem=Path.ChangeExtension(path,null);path=new[]{stem+".tga",stem+".png",stem+".dds",stem}.FirstOrDefault(File.Exists)??path;}try{using(var im=new Bitmap(path))b=new Bitmap(im);}catch{b=NativeImage(path,game);}}}catch{}
    if(embedded)embeddedImages.Add(source,new ImageEntry(b));else files[source]=b;
    return b;
   }
-  static Bitmap NativeImage(string file,string game){return GameImageDecoder.Decode(file,game);}
+  static Bitmap NativeImage(string file,string game){try{if(!attempt){attempt=true;native=LoadLibrary(Path.Combine(game,"DevIL.dll"))!=IntPtr.Zero;if(native){ilInit();ilEnable(0x0600);ilOriginFunc(0x0602);}}if(!native)return null;uint id;ilGenImages(1,out id);try{ilBindImage(id);if(ilLoadImage(file)==0||ilConvertImage(0x80E1,0x1401)==0)return null;int w=ilGetInteger(0x0DE4),h=ilGetInteger(0x0DE5);if(w<=0||h<=0||w*h>64000000)return null;byte[] pixels=new byte[w*h*4];Marshal.Copy(ilGetData(),pixels,0,pixels.Length);var bmp=new Bitmap(w,h,PixelFormat.Format32bppArgb);var bits=bmp.LockBits(new Rectangle(0,0,w,h),ImageLockMode.WriteOnly,PixelFormat.Format32bppArgb);for(int y=0;y<h;y++)Marshal.Copy(pixels,y*w*4,IntPtr.Add(bits.Scan0,y*bits.Stride),w*4);bmp.UnlockBits(bits);return bmp;}finally{ilDeleteImages(1,ref id);}}catch{return null;}}
   public static Bitmap Body(Entity e,string game){var image=Image(e.Texture.Length>0?e.Texture:Catalog.Get(e).Texture,game);return e.Kind=="projectiles"&&e.Texture.Length>0?Raster.Tight(image):image;}
   // A square artwork thumbnail. HUD cards add their own price area below it.
   public static Bitmap Icon(Entity e,string game){

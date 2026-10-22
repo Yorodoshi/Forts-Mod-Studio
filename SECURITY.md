@@ -2,25 +2,21 @@
 
 ## Проверка выпуска
 
-Скачивайте программу из [GitHub Releases этого репозитория](https://github.com/Yorodoshi/Forts-Mod-Studio/releases). У выпуска публикуются:
+Скачивайте программу из [GitHub Releases этого репозитория](https://github.com/Yorodoshi/Forts-Mod-Studio/releases). После отката рекомендуемая версия — **исходная 2.7.0**. Её опубликованный EXE не пересобирался и не подписан Authenticode. Версия 2.7.1 сохранена как предварительный выпуск для истории.
 
-- `SHA256SUMS.txt` — контрольные суммы EXE и ZIP;
-- `build-info.json` — версия, исходный коммит, сведения о компиляторе и фактический статус подписи;
-- журнал сборки GitHub Actions и аттестация происхождения EXE/ZIP.
+SHA256 рекомендуемого EXE 2.7.0:
+
+```text
+f16fd6739f4bc4dd497550f6e666daac76a499d4a049053c35ab2a66e10773d0
+```
 
 Сравнить сумму файла на Windows:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath '.\Forts Mod Studio 2.7.1.exe'
+Get-FileHash -Algorithm SHA256 -LiteralPath '.\Forts Mod Studio 2.7.exe'
 ```
 
-При установленном GitHub CLI происхождение файла можно проверить так:
-
-```powershell
-gh attestation verify '.\Forts Mod Studio 2.7.1.exe' --repo Yorodoshi/Forts-Mod-Studio
-```
-
-Совпадение суммы подтверждает идентичность файла, а аттестация — его связь со сборкой из этого репозитория. Они сами по себе не являются заключением антивируса.
+У исторического выпуска 2.7.1 опубликованы `SHA256SUMS.txt`, `build-info.json`, журнал GitHub Actions и аттестация происхождения EXE/ZIP. Они относятся к 2.7.1 и не подтверждают происхождение бинарного файла 2.7.0. Совпадение суммы подтверждает идентичность файла; аттестация — связь с конкретной сборкой. Ни то, ни другое не является заключением антивируса. [Подробности проверки 2.7.1](docs/releases/v2.7.1-verification.md).
 
 ## Подпись и предупреждения Windows
 
@@ -37,32 +33,29 @@ gh attestation verify '.\Forts Mod Studio 2.7.1.exe' --repo Yorodoshi/Forts-Mod-
 - Для воспроизведения аудио использует Windows MCI. По нажатию соответствующих кнопок открывает Forts через Steam или страницы документации.
 - Не содержит встроенных загрузчиков обновлений, телеметрии, автозапуска при входе в Windows или изменения настроек антивируса.
 
-Начиная с 2.7.1 импорт проекта не разрешает загрузку DLL или запуск EXE из указанной им новой папки. Используется локальная установка, найденная через Steam, либо папка, явно указанная пользователем в **«Проект и установка» → «Выбрать папку игры»**. Одобренные папки хранятся отдельно, в `approved-game-folders.txt`. Зависимости декодера ищутся только в этой папке игры и системной папке Windows.
-
-Программа запускается с правами текущего пользователя (`asInvoker`). Запись в защищённую папку игры может быть запрещена Windows; редактор не обходит права доступа.
+В 2.7.1 добавлялись отдельное подтверждение папок игровых EXE/DLL, ограничение поиска зависимостей декодера и манифест `asInvoker`. **При откате эти изменения отменены.** Для восстановленной 2.7.0 проверка границ доверия при импорте проекта и загрузке игровых зависимостей остаётся незавершённой; гарантии этих изменений к ней не применяются. Не открывайте проекты и игровые зависимости из источников, которым не доверяете.
 
 ## VirusTotal и возможные ложные срабатывания
 
 VirusTotal показывает результаты независимых движков. Универсального допуска «прошёл VirusTotal» нет. Изменения безопасности не гарантируют счётчик 0/N, а отсутствие обнаружений не доказывает отсутствие уязвимостей.
 
-В пользовательском отчёте для 2.7.0 отмечены **McAfee Scanner** и **SecureAge**, 2/68. SHA256 файла:
+Пользовательские отчёты:
 
-```text
-f16fd6739f4bc4dd497550f6e666daac76a499d4a049053c35ab2a66e10773d0
-```
+- **2.7.0, SHA256 выше: 2/68**, McAfee Scanner и SecureAge.
+- **2.7.1, SHA256 `43e2d48921906361ba944372307185c8714d4c73269b8e51f39954c18e20c38e`: 4/71**, Bkav Pro, Microsoft, McAfee Scanner и SecureAge. [Отчёт VirusTotal](https://www.virustotal.com/gui/file/43e2d48921906361ba944372307185c8714d4c73269b8e51f39954c18e20c38e); точные метки — в [записи проверки](docs/releases/v2.7.1-verification.md).
 
-Эта запись относится именно к 2.7.0. Она не является результатом сканирования 2.7.1. Причина двух срабатываний не установлена. Пример запроса на ручную проверку находится в [docs/false-positive-report.md](docs/false-positive-report.md). [Порядок оспаривания по документации VirusTotal](https://docs.virustotal.com/docs/false-positive).
+Счётчики записаны по предоставленным пользователем снимкам экрана; независимая проверка через API не выполнялась. Причина срабатываний не установлена. Откат сделан по просьбе пользователя, а не как доказательство безопасности 2.7.0. Пример запроса на ручную проверку находится в [docs/false-positive-report.md](docs/false-positive-report.md). [Порядок оспаривания по документации VirusTotal](https://docs.virustotal.com/docs/false-positive).
 
 Для сообщения о срабатывании приложите версию FMS, SHA256, ссылку на отчёт и точное имя движка. Не присылайте ключи доступа и личные проекты. Уязвимости можно сообщить через вкладку Security репозитория, если доступно приватное сообщение; иначе откройте Issue без публикации чувствительных данных.
 
 ## English
 
-Download releases from this repository. Each release includes SHA256 checksums, build metadata, an Actions build log and provenance attestations for the EXE/ZIP. Checksums establish file identity; attestations establish build provenance. Neither is an antivirus verdict.
+Download releases from this repository. Following the rollback, **the original 2.7.0 is recommended**. Its published EXE was not rebuilt; its SHA256 is shown above. Release 2.7.1 remains a historical prerelease. Published Actions provenance and attestations apply to 2.7.1, not to the restored 2.7.0 binary. Checksums establish file identity; attestations establish build provenance. Neither is an antivirus verdict.
 
 The current binary is **not Authenticode-signed**. An EXE company field and a GitHub attestation do not replace a trusted publisher certificate. A valid certificate or owner-configured signing service is required to sign future releases. A new signed binary may still receive a SmartScreen reputation warning.
 
 FMS edits projects and local assets, stores autosaves/settings under `%LOCALAPPDATA%\FortsModStudio2`, and writes mods/maps when requested. It uses the installed game's DevIL decoder and Lua syntax checker, plus Windows MCI audio playback. It contains no telemetry, automatic updater, login persistence or antivirus-setting changes.
 
-From 2.7.1, imported project data cannot approve a new executable/DLL directory. FMS uses a local Steam-discovered installation or a game folder explicitly selected by the user. Approved folders are kept separately in `approved-game-folders.txt`. Decoder dependencies are restricted to that game directory and Windows System32. The application manifest requests the current user's permissions (`asInvoker`).
+The rollback also removes 2.7.1's explicit approval of executable/DLL directories, restricted decoder dependency search and `asInvoker` manifest. Those protections do not apply to 2.7.0. Review of the restored baseline's trust boundaries for imported projects and native game dependencies remains incomplete. Only open projects and game dependencies from sources you trust.
 
-The reported 2/68 detections for the SHA256 above apply to **2.7.0**, not 2.7.1. Their cause is unconfirmed. Report suspected false positives to the detecting vendor using the linked template. No VirusTotal result is advertised as clean without a corresponding report for the exact released hash.
+The user reported **2/68 for 2.7.0** (McAfee Scanner and SecureAge) and **4/71 for 2.7.1** (Bkav Pro, Microsoft, McAfee Scanner and SecureAge). The linked verification record contains the exact hash, report and labels for 2.7.1. These are user-provided screenshots, not independent API scans. The cause remains unconfirmed; a lower count is not proof of safety. Report suspected false positives to the detecting vendor using the linked template. No clean result is claimed.

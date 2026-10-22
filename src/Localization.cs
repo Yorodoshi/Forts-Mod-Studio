@@ -26,12 +26,6 @@ namespace FortsStudio {
    translations["1 клетка = {0} ед.  ·  {1}%  ·  Балок: {2}  ·  Объектов: {3}"]="1 cell = {0} units  ·  {1}%  ·  Beams: {2}  ·  Objects: {3}";
    translations["Ближний режим · скоростная очередь"]="Close mode · rapid burst";
    translations["Дальний режим · зенитный залп"]="Long-range mode · anti-air burst";
-      translations["Выберите установленную Forts через «Проект и установка» → «Выбрать папку игры». Путь из импортированного проекта не разрешает запуск программ."]="Select your installed Forts under Project and installation → Choose game folder. Importing a project does not approve a folder for running programs.";
-   translations["Выберите локальную папку установленной игры с Forts.exe и каталогом data."]="Select the local game installation folder containing Forts.exe and the data directory.";
-   translations["Проверка Lua превысила 30 секунд."]="Lua validation exceeded 30 seconds.";
-   translations["Анализатор Lua не завершил вывод журнала."]="The Lua validator did not finish writing its output.";
-      translations["Небезопасный путь ресурса мода."]="Unsafe mod resource path.";
-   translations["Допустимы только WAV и MP3."]="Only WAV and MP3 audio files are supported.";
    foreach(var pair in translations)if(!folded.ContainsKey(pair.Key))folded.Add(pair.Key,pair.Value);
    var keys=translations.Keys.Where(k=>k.Length>1&&HasRussian(k)).OrderByDescending(k=>k.Length).Select(k=>(Char.IsLetterOrDigit(k[0])?@"(?<![\p{L}\p{N}_])":"")+Regex.Escape(k)+(Char.IsLetterOrDigit(k[k.Length-1])?@"(?![\p{L}\p{N}_])":""));
    fragmentPattern=new Regex(String.Join("|",keys),RegexOptions.CultureInvariant|RegexOptions.IgnoreCase|RegexOptions.Compiled);

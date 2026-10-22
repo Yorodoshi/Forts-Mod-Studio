@@ -4,15 +4,18 @@
 
 A desktop mod editor for **Forts**. Create materials, devices, technology buildings, weapons, projectiles and scenarios, then export or install your mod.
 
+
+The primary release is **2.7.0**. At the owner's request, 2.7.1 is retained as a prerelease following a 4/71 VirusTotal report. [Rollback details and exact files](docs/releases/rollback-to-v2.7.0.md).
+
 ## Install and launch
 
 1. Open [Releases](https://github.com/Yorodoshi/Forts-Mod-Studio/releases).
-2. Download and extract the release ZIP, then run **Forts Mod Studio 2.7.1.exe**. A standalone EXE is also available.
+2. Download and extract the release ZIP, then run **Forts Mod Studio 2.7.exe**. A standalone EXE is also available.
 3. Under **Project and installation**, select the folder containing `Forts.exe` if automatic detection did not find it.
 
 Requires Windows x64, .NET Framework 4.x and an installed copy of Forts for game templates, Lua validation and the in-game range. FMS needs no installer or additional libraries. High Seas features, including consumable ammunition, require the corresponding game content.
 
-Before updating, save your project and close the previous FMS version. Versions 2.5–2.7.1 share the same autosave.
+Before updating, save your project and close the previous FMS version. Versions 2.5–2.7 share the same autosave.
 
 ## English and Russian
 
@@ -54,7 +57,7 @@ On Windows, run from the repository folder:
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-Output: `dist\Forts Mod Studio 2.7.1.exe`. The script uses the Windows .NET Framework x64 compiler. C# source and embedded Lua resources are in `src/`.
+Output: `dist\Forts Mod Studio 2.7.exe`. The script uses the Windows .NET Framework x64 compiler. C# source and embedded Lua resources are in `src/`.
 
 ## Authenticity and security
 

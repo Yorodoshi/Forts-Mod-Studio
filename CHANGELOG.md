@@ -1,6 +1,16 @@
 # Changes / Изменения
 
-## 2.7.1
+## Rollback to 2.7.0 / Возврат 2.7.0
+
+- Restored application source and build.ps1 exactly from v2.7.0; original release binaries are unchanged.
+- Made 2.7.0 the primary release; retained 2.7.1 as a prerelease for investigation.
+- Recorded the owner's VirusTotal report for 2.7.1: 4/71, including Microsoft.
+- Removed the new automated publishing pipeline from main; preserved its historical tag and build records.
+- Kept Russian/English switching and GitHub change documentation.
+
+Возврат выполнен по просьбе владельца. Меньший счётчик обнаружений сам по себе не подтверждает безопасность старой версии. [Подробности](docs/releases/rollback-to-v2.7.0.md).
+
+## 2.7.1 — prerelease / выведен из рекомендуемых
 
 - Separated executable/DLL location approval from imported project data.
 - Restricted DevIL module/dependency loading and checked native image buffers.
